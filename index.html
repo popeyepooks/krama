@@ -90,7 +90,7 @@
         .bucket.has-tasks { display: block; }
         .bucket-tag { font-family: 'Space Mono'; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; display: block; border-left: 2px solid var(--accent); padding-left: 12px; }
         .task-list { display: flex; flex-direction: column; gap: 12px; }
-        .task-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; transition: border-color 0.2s, box-shadow 0.2s; }
+        .task-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; transition: border-color 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; cursor: pointer; }
         .task-card.done { opacity: 0.25; filter: grayscale(1); }
         .task-card.task-sel { border-color: var(--accent); box-shadow: 0 0 18px rgba(232,197,71,0.12); }
         .task-left { display: flex; align-items: center; gap: 16px; }
@@ -109,26 +109,54 @@
 
         /* ── SUBTASK DRAWER ── */
         .task-wrapper { display: flex; flex-direction: column; }
-        .task-card { cursor: pointer; }
-        .task-card .task-actions button { cursor: pointer; }
 
         .subtask-drawer { background: #0d0d0d; border: 1px solid var(--border); border-top: none;
             border-radius: 0 0 16px 16px; overflow: hidden;
             max-height: 0; transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1), padding 0.32s; padding: 0 18px; }
         .subtask-drawer.open { max-height: 420px; padding: 14px 18px 16px; }
 
-        /* Progress bar on task card */
-        .task-prog-wrap { width: 100%; background: #1a1a1a; border-radius: 3px; height: 3px; margin-bottom: 14px; overflow: hidden; }
-        .task-prog-fill { height: 100%; background: var(--p-low); border-radius: 3px; transition: width 0.45s ease; }
+        /* Progress bar on task card — absolute at top edge, full width, no padding interference */
+        .task-prog-wrap { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #1a1a1a; border-radius: 16px 16px 0 0; overflow: hidden; margin: 0; }
+        .task-prog-fill { height: 100%; background: var(--p-low); transition: width 0.45s ease; }
         .task-prog-fill.full { background: var(--accent); }
 
         /* Subtask rows */
         .subtask-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
         .subtask-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; background: #111; border: 1px solid var(--border); transition: opacity 0.2s; }
         .subtask-row.sub-done { opacity: 0.38; }
-        .sub-check { width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--border); background: none; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; transition: 0.15s; padding: 0; color: transparent; }
-        .subtask-row.sub-done .sub-check { background: var(--accent); border-color: var(--accent); color: black; }
-        .sub-check:hover { border-color: var(--accent); }
+        .sub-check {
+            width: 24px; height: 24px; border-radius: 6px;
+            border: 2px solid #4a3f1a;                /* dark-gold, clearly visible on #111 */
+            background: #1c1608;
+            cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 900;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
+            padding: 0; color: transparent; position: relative;
+        }
+        /* faint inner diamond marker so the box reads as interactive at a glance */
+        .sub-check::after {
+            content: ''; position: absolute;
+            width: 6px; height: 6px; border-radius: 2px;
+            background: rgba(232,197,71,0.25);
+            transform: rotate(45deg);
+            transition: opacity 0.15s;
+        }
+        .sub-check:hover {
+            border-color: var(--accent);
+            background: rgba(232,197,71,0.12);
+            box-shadow: 0 0 0 3px rgba(232,197,71,0.15);
+            transform: scale(1.08);
+        }
+        .sub-check:hover::after { opacity: 0; }
+        .subtask-row.sub-done .sub-check {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            box-shadow: 0 0 12px rgba(232,197,71,0.45);
+            transform: scale(1);
+        }
+        .subtask-row.sub-done .sub-check::after { display: none; }
         .sub-name { font-family: 'DM Sans'; font-size: 0.85rem; flex-grow: 1; }
         .subtask-row.sub-done .sub-name { text-decoration: line-through; color: var(--text-dim); }
         .sub-del { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
@@ -146,10 +174,13 @@
         /* Congratulation card (replaces task wrapper on completion) */
         .task-congrats { background: var(--card); border: 1px solid rgba(232,197,71,0.4); border-radius: 16px;
             padding: 20px 24px; text-align: center; animation: congratsPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-        .task-congrats.fade-out { animation: congratsFade 0.5s ease forwards; }
         @keyframes congratsPop  { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes congratsFade { from { opacity: 1; max-height: 80px; margin-bottom: 12px; }
-                                   to   { opacity: 0; max-height: 0;   margin-bottom: 0;   padding: 0; } }
+        /* Collapse applied to the wrapper div — animates the whole block out of flow */
+        .task-wrapper.congrats-collapse { animation: wrapperCollapse 0.5s ease forwards; overflow: hidden; }
+        @keyframes wrapperCollapse {
+            from { opacity: 1; max-height: 120px; margin-bottom: 12px; }
+            to   { opacity: 0; max-height: 0;     margin-bottom: 0; }
+        }
         .congrats-title { font-family: 'Syne'; font-size: 1.1rem; color: var(--accent); letter-spacing: -0.5px; margin-bottom: 4px; }
         .congrats-sub   { font-family: 'Space Mono'; font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 
@@ -190,6 +221,45 @@
         .notify-quote { font-family: 'Space Mono'; font-size: 0.72rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 30px; padding: 14px; border: 1px solid rgba(232,197,71,0.15); border-radius: 10px; }
         .notify-dismiss { background: var(--accent); color: black; border: none; padding: 16px 45px; border-radius: 12px; font-family: 'Syne'; font-weight: 800; font-size: 1rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: opacity 0.2s, transform 0.1s; }
         .notify-dismiss:hover { opacity: 0.88; transform: scale(1.02); }
+
+        /* ── AI DAY PLANNER PANEL ── */
+        .ai-panel-wrap { margin-bottom: 28px; overflow: hidden; }
+        .ai-panel { background: var(--card); border: 1px solid #2a2a1a; border-radius: 20px;
+            padding: 0; overflow: hidden;
+            max-height: 0; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1); }
+        .ai-panel.open { max-height: 800px; }
+        .ai-panel-inner { padding: 28px 32px; }
+        .ai-trigger-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+        .ai-trigger-btn { background: #14120a; border: 1px solid rgba(232,197,71,0.35); color: var(--accent);
+            padding: 9px 18px; border-radius: 8px; cursor: pointer; font-family: 'Space Mono';
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; transition: 0.2s;
+            display: flex; align-items: center; gap: 7px; }
+        .ai-trigger-btn:hover { background: rgba(232,197,71,0.1); border-color: var(--accent); box-shadow: 0 0 20px rgba(232,197,71,0.12); }
+        .ai-trigger-btn.loading { opacity: 0.6; cursor: not-allowed; }
+        .ai-spark { font-size: 1rem; animation: sparkPulse 1.4s ease infinite; display: inline-block; }
+        @keyframes sparkPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+        /* Schedule blocks */
+        .ai-schedule { display: flex; flex-direction: column; gap: 0; }
+        .ai-block { display: grid; grid-template-columns: 90px 1fr; gap: 0; position: relative; }
+        .ai-block:not(:last-child)::after {
+            content: ''; position: absolute; left: 42px; top: 44px; bottom: -4px;
+            width: 1px; background: linear-gradient(to bottom, rgba(232,197,71,0.3), transparent);
+        }
+        .ai-time-col { padding: 14px 0 14px 0; display: flex; flex-direction: column; align-items: flex-end; padding-right: 18px; }
+        .ai-time { font-family: 'Space Mono'; font-size: 0.65rem; color: var(--accent); font-weight: 700; white-space: nowrap; }
+        .ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 5px; box-shadow: 0 0 8px rgba(232,197,71,0.5); flex-shrink: 0; }
+        .ai-content-col { padding: 14px 0 14px 0; border-bottom: 1px solid #1a1a1a; }
+        .ai-block:last-child .ai-content-col { border-bottom: none; }
+        .ai-task-name { font-family: 'Syne'; font-size: 1rem; letter-spacing: -0.3px; margin-bottom: 4px; }
+        .ai-sessions { font-family: 'Space Mono'; font-size: 0.58rem; color: var(--text-dim); margin-bottom: 4px; }
+        .ai-note { font-family: 'DM Sans'; font-size: 0.8rem; color: #555; font-style: italic; }
+        .ai-end-row { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .ai-end-lbl { font-family: 'Space Mono'; font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .ai-end-time { font-family: 'Syne'; font-size: 1.4rem; color: var(--accent); letter-spacing: -1px; }
+        .ai-tip { font-family: 'Space Mono'; font-size: 0.6rem; color: var(--p-low); text-transform: uppercase; letter-spacing: 1px; max-width: 55%; text-align: right; line-height: 1.5; }
+        .ai-empty { font-family: 'Space Mono'; font-size: 0.7rem; color: var(--text-dim); text-align: center; padding: 20px 0; }
+        .ai-error { font-family: 'Space Mono'; font-size: 0.65rem; color: var(--p-high); text-align: center; padding: 16px; }
     </style>
 </head>
 <body>
@@ -255,8 +325,23 @@
 <div id="view-timeline" class="main-view active">
     <div class="header-top">
         <h2 class="quote-h2" id="dynamic-quote">WORK IN SILENCE.</h2>
-        <button class="add-trigger" onclick="ui.toggleModal(true)">+ NEW OBJECTIVE</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+            <button class="ai-trigger-btn" id="ai-plan-btn" onclick="aiPlanner.toggle()">
+                <span class="ai-spark">✦</span> PLAN MY DAY
+            </button>
+            <button class="add-trigger" onclick="ui.toggleModal(true)">+ NEW OBJECTIVE</button>
+        </div>
     </div>
+
+    <!-- AI DAY PLANNER PANEL -->
+    <div class="ai-panel-wrap">
+        <div class="ai-panel" id="ai-panel">
+            <div class="ai-panel-inner" id="ai-panel-inner">
+                <div class="ai-empty">Hit "PLAN MY DAY" to generate your Pomodoro schedule.</div>
+            </div>
+        </div>
+    </div>
+
     <div id="bucket-today"    class="bucket"><span class="bucket-tag">Today</span>   <div id="list-today"    class="task-list"></div></div>
     <div id="bucket-tomorrow" class="bucket"><span class="bucket-tag">Tomorrow</span><div id="list-tomorrow" class="task-list"></div></div>
     <div id="bucket-upcoming" class="bucket"><span class="bucket-tag">Upcoming</span><div id="list-upcoming" class="task-list"></div></div>
@@ -334,6 +419,18 @@
 
 <!-- ═══════════════════ SCRIPT ═══════════════════ -->
 <script>
+    /* ─── UTILS ─── */
+    /* Returns YYYY-MM-DD in the user's LOCAL timezone, not UTC.
+       Using toISOString() gives UTC which is wrong for users east of UTC+0
+       (e.g. IST = UTC+5:30) — at midnight local time it's still yesterday UTC,
+       causing rolled-over tasks to land in the wrong bucket. */
+    const localDateStr = (d = new Date()) => {
+        const y  = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const dy = String(d.getDate()).padStart(2, '0');
+        return `${y}-${mo}-${dy}`;
+    };
+
     /* ─── STATE ─── */
     const state = {
         tasks:          JSON.parse(localStorage.getItem('k_v8_tasks')) || [],
@@ -367,7 +464,7 @@
            We track the last run date in localStorage so this is idempotent
            across multiple calls on the same day (page loads, tab focus, etc.) */
         rollover: () => {
-            const today   = new Date().toISOString().split('T')[0];
+            const today   = localDateStr();
             const lastRun = localStorage.getItem('k_v8_lastRollover');
             if (lastRun === today) return;           // already ran today
 
@@ -388,7 +485,7 @@
         addTask: () => {
             const n = document.getElementById('task-name').value.trim();
             const h = parseFloat(document.getElementById('task-hrs').value) || 0;
-            const d = document.getElementById('task-date').value || new Date().toISOString().split('T')[0];
+            const d = document.getElementById('task-date').value || localDateStr();
             if (!n) return;
             state.tasks.push({ id: Date.now(), name: n, mins: Math.round(h * 60), date: d,
                 prio: state.currentPrio, done: false, rolledOver: false, subtasks: [] });
@@ -445,7 +542,7 @@
             if (s) {
                 document.getElementById('task-name').value = '';
                 document.getElementById('task-hrs').value = '1';
-                document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('task-date').value = localDateStr();
                 ui.setPrio('mid');
             }
         },
@@ -471,9 +568,9 @@
         },
 
         render: () => {
-            const today   = new Date().toISOString().split('T')[0];
+            const today   = localDateStr();
             const tomo    = new Date(); tomo.setDate(tomo.getDate() + 1);
-            const tomoStr = tomo.toISOString().split('T')[0];
+            const tomoStr = localDateStr(tomo);
             const lists   = {
                 today:    document.getElementById('list-today'),
                 tomorrow: document.getElementById('list-tomorrow'),
@@ -523,20 +620,26 @@
                                 <button class="icon-btn" onclick="event.stopPropagation();ui.deleteTask(${t.id})">×</button>
                             </div>
                           </div>
-                          <div class="subtask-drawer${drawerOpen}" id="sd-${t.id}">
+                          <div class="subtask-drawer${drawerOpen}" id="sd-${t.id}" onclick="event.stopPropagation()">
                             <div id="sublist-${t.id}" class="subtask-list">
                               ${ui._subtaskListHTML(t.id, subs)}
                             </div>
                             <div class="subtask-add-row">
                               <input class="subtask-inp" id="si-${t.id}" placeholder="Add subtask…"
-                                onclick="event.stopPropagation()"
                                 onkeydown="if(event.key==='Enter'){event.stopPropagation();engine.addSubtask(${t.id},this.value,this);}">
                               <button class="sub-add-btn" onclick="event.stopPropagation();engine.addSubtask(${t.id},document.getElementById('si-${t.id}').value,document.getElementById('si-${t.id}'))">+</button>
                             </div>
                           </div>
                         </div>`;
 
-                    if (key === 'today' && !t.done) rolling.setMinutes(rolling.getMinutes() + t.mins);
+                    if (key === 'today' && !t.done) {
+                        /* Pomodoro-aware block: n sessions × (workDuration + breakDuration) */
+                        const wMins = timer.workDuration / 60;
+                        const bMins = timer.breakDuration / 60;
+                        const sessions = t.mins > 0 ? Math.ceil(t.mins / wMins) : 0;
+                        const blockMins = sessions > 0 ? sessions * (wMins + bMins) : 0;
+                        rolling.setMinutes(rolling.getMinutes() + blockMins);
+                    }
                 });
         },
 
@@ -593,10 +696,10 @@
                 { title: 'CRUSHED IT.',         sub: 'Execution is religion.' },
                 { title: 'DONE. DONE. DONE.',   sub: 'On to the next one.' },
             ];
-            const m      = msgs[Math.floor(Math.random() * msgs.length)];
-            const wrapper = document.getElementById('tw-' + taskId);
+            const m       = msgs[Math.floor(Math.random() * msgs.length)];
+            const wrapper  = document.getElementById('tw-' + taskId);
             if (!wrapper) return;
-            /* Flash 100% bar first */
+            /* Flash 100% bar first, then swap content */
             ui.renderTaskSubtasks(taskId);
             setTimeout(() => {
                 wrapper.innerHTML = `
@@ -604,10 +707,9 @@
                         <div class="congrats-title">${m.title}</div>
                         <div class="congrats-sub">${m.sub}</div>
                     </div>`;
-                /* After 1.8s, fade out then delete */
+                /* After 1.8s start collapsing the wrapper itself */
                 setTimeout(() => {
-                    const el = document.getElementById('tc-' + taskId);
-                    if (el) el.closest('.task-wrapper, .task-congrats').classList.add('fade-out');
+                    wrapper.classList.add('congrats-collapse');
                     setTimeout(() => {
                         if (timer.activeTaskId === taskId) {
                             timer.activeTaskId = null;
@@ -646,7 +748,7 @@
             engine.save(); ui.render();
         },
         renderAnalytics: () => {
-            const today        = new Date().toISOString().split('T')[0];
+            const today        = localDateStr();
             const currentMonth = today.substring(0, 7);
 
             document.getElementById('stat-total-tasks').innerText = state.lifetime;
@@ -654,7 +756,7 @@
             document.getElementById('stat-today-time').innerText  = tVal + 'm';
 
             const yest    = new Date(); yest.setDate(yest.getDate() - 1);
-            const yestStr = yest.toISOString().split('T')[0];
+            const yestStr = localDateStr(yest);
             const yVal    = state.history[yestStr] || 0;
             const growth  = yVal > 0 ? Math.round(((tVal - yVal) / yVal) * 100) : (tVal > 0 ? 100 : 0);
             const gEl     = document.getElementById('growth-index');
@@ -669,7 +771,7 @@
             let max = 60, data = [];
             for (let i = 13; i >= 0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
-                const s = d.toISOString().split('T')[0], m = state.history[s] || 0;
+                const s = localDateStr(d), m = state.history[s] || 0;
                 if (m > max) max = m;
                 data.push({ label: d.getDate(), val: m, isToday: i === 0 });
             }
@@ -855,7 +957,7 @@
 
             if (timer.mode === 'work') {
                 /* Record time */
-                const today = new Date().toISOString().split('T')[0];
+                const today = localDateStr();
                 state.history[today] = (state.history[today] || 0) + workMins;
                 engine.save();
 
@@ -983,6 +1085,171 @@
             timer.updateTaskUI();
             document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('sel'));
             document.getElementById('timer-settings-panel').classList.remove('open');
+        }
+    };
+
+    /* ─── AI DAY PLANNER  (pure-JS, zero network, zero dependencies) ─── */
+    const aiPlanner = {
+        open: false,
+
+        /* ── message banks ─────────────────────────────────────────────── */
+        _taskNotes: {
+            high: [
+                'Your most critical item — own it first.',
+                'Highest stakes. Give it everything.',
+                'Non-negotiable. Deep focus required.',
+                'This one moves the needle most.',
+                'Top priority. No distractions.'
+            ],
+            mid: [
+                'Steady pacing will get this done.',
+                'Good candidate for your second wind.',
+                'Consistent effort beats bursts here.',
+                'Flow state territory.',
+                'Lock in and chip away.'
+            ],
+            low: [
+                'Low stakes — perfect for winding down.',
+                'Light cognitive load. Stay present.',
+                'Good end-of-day task.',
+                'This one breathes easy.',
+                'Finish strong, even on the small stuff.'
+            ]
+        },
+        _overloadNotes: [
+            'Heavy day. Guard your breaks fiercely.',
+            'Dense schedule — breaks are not optional.',
+            'Packed session. Stick to the clock.',
+            'Long haul. Pacing > sprinting today.'
+        ],
+        _tips: [
+            'CLOSE ALL NOTIFICATIONS BEFORE YOUR FIRST SESSION.',
+            'DRINK WATER BEFORE EVERY FOCUS BLOCK.',
+            'THE BREAK IS PART OF THE WORK. DO NOT SKIP IT.',
+            'ONE TAB. ONE TASK. ONE SESSION AT A TIME.',
+            'START WITH THE HARDEST THING. EVERYTHING ELSE IS EASY.',
+            'MOMENTUM COMPOUNDS. DO NOT BREAK THE CHAIN.',
+            'A SHORT DONE BEATS A LONG PLANNED.',
+            'YOUR ENVIRONMENT IS YOUR FIRST TOOL. OPTIMISE IT.',
+            'PROTECT YOUR FIRST HOUR. IT SETS THE ENTIRE DAY.',
+            'DONE IS BETTER THAN PERFECT. SHIP THE SESSION.'
+        ],
+        _quickPick: function(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        },
+
+        /* ── toggle panel open / closed ─────────────────────────────────── */
+        toggle: function() {
+            var panel = document.getElementById('ai-panel');
+            if (!panel) return;
+            aiPlanner.open = !aiPlanner.open;
+            if (aiPlanner.open) {
+                panel.classList.add('open');
+                aiPlanner.run();
+            } else {
+                panel.classList.remove('open');
+            }
+        },
+
+        /* ── core scheduler ─────────────────────────────────────────────── */
+        run: function() {
+            var inner = document.getElementById('ai-panel-inner');
+            var today = localDateStr();
+            var pMap  = { high: 0, mid: 1, low: 2 };
+
+            var todayTasks = state.tasks
+                .filter(function(t) { return !t.done && t.date === today; })
+                .sort(function(a, b) { return pMap[a.prio] - pMap[b.prio]; });
+
+            if (todayTasks.length === 0) {
+                inner.innerHTML = '<div class="ai-empty">No tasks for today. Add some objectives first.</div>';
+                return;
+            }
+
+            /* Pomodoro constants (seconds → minutes) */
+            var wMins = timer.workDuration  / 60;   /* e.g. 25 */
+            var bMins = timer.breakDuration / 60;   /* e.g.  5 */
+
+            /* Rolling clock starting from NOW */
+            var cursor = new Date();
+
+            /* Build schedule entries */
+            var schedule  = [];
+            var totalMins = 0;
+
+            todayTasks.forEach(function(t) {
+                var sessions   = t.mins > 0 ? Math.ceil(t.mins / wMins) : 1;
+                var focusMins  = sessions * wMins;
+                var blockMins  = sessions * (wMins + bMins);   /* includes break after each session */
+                totalMins     += blockMins;
+
+                var startStr = cursor.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                cursor.setMinutes(cursor.getMinutes() + blockMins);
+                var endStr   = cursor.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+                /* Pick a context-aware note */
+                var noteBank = aiPlanner._taskNotes[t.prio] || aiPlanner._taskNotes.mid;
+                var note     = aiPlanner._quickPick(
+                    totalMins > 240 ? aiPlanner._overloadNotes.concat(noteBank) : noteBank
+                );
+
+                schedule.push({
+                    name:      t.name,
+                    prio:      t.prio,
+                    start:     startStr,
+                    end:       endStr,
+                    sessions:  sessions,
+                    focusMins: focusMins,
+                    blockMins: blockMins,
+                    note:      note
+                });
+            });
+
+            var totalEndStr = cursor.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            var tip         = aiPlanner._quickPick(aiPlanner._tips);
+
+            aiPlanner.render(schedule, totalEndStr, tip, wMins, bMins);
+        },
+
+        /* ── renderer ───────────────────────────────────────────────────── */
+        render: function(schedule, totalEndStr, tip, wMins, bMins) {
+            var inner = document.getElementById('ai-panel-inner');
+            if (!inner) return;
+
+            var prioColour = { high: 'var(--p-high)', mid: 'var(--p-mid)', low: 'var(--p-low)' };
+
+            var blocks = '';
+            schedule.forEach(function(item) {
+                var dotColour = prioColour[item.prio] || 'var(--accent)';
+                var sessionLabel = item.sessions === 1
+                    ? '1 session'
+                    : item.sessions + ' sessions';
+
+                blocks += '<div class="ai-block">'
+                    + '<div class="ai-time-col">'
+                    +   '<div class="ai-time">' + item.start + '</div>'
+                    +   '<div class="ai-dot" style="background:' + dotColour + ';box-shadow:0 0 8px ' + dotColour + '40;"></div>'
+                    + '</div>'
+                    + '<div class="ai-content-col">'
+                    +   '<div class="ai-task-name">' + item.name + '</div>'
+                    +   '<div class="ai-sessions">'
+                    +     sessionLabel + ' · ' + item.focusMins + 'min focus'
+                    +     ' · ' + (item.sessions * bMins) + 'min breaks'
+                    +     ' · ends ' + item.end
+                    +   '</div>'
+                    +   '<div class="ai-note">' + item.note + '</div>'
+                    + '</div>'
+                    + '</div>';
+            });
+
+            inner.innerHTML = '<div class="ai-schedule">' + blocks + '</div>'
+                + '<div class="ai-end-row">'
+                +   '<div>'
+                +     '<div class="ai-end-lbl">Day wraps up</div>'
+                +     '<div class="ai-end-time">' + totalEndStr + '</div>'
+                +   '</div>'
+                +   '<div class="ai-tip">' + tip + '</div>'
+                + '</div>';
         }
     };
 
